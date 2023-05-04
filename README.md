@@ -24,7 +24,7 @@ db = 0
 import (
     "context"
     
-    "github.com/go-redis/redis/v8"
+    "github.com/go-redis/redis/v9"
     "github.com/hy0kl/goredis"
 )
 

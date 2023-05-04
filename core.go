@@ -7,19 +7,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/hy0kl/gconfig"
+	"github.com/redis/go-redis/v9"
 	"github.com/spf13/cast"
 )
 
 func newRedisClient(option redis.Options) *redis.Client {
 	client := redis.NewClient(&redis.Options{
-		Addr:        option.Addr,
-		Username:    option.Username,
-		Password:    option.Password, // no password set
-		DB:          option.DB,       // use default DB
-		PoolSize:    option.PoolSize,
-		IdleTimeout: option.IdleTimeout,
+		Addr:     option.Addr,
+		Username: option.Username,
+		Password: option.Password, // no password set
+		DB:       option.DB,       // use default DB
+		PoolSize: option.PoolSize,
 	})
 
 	_, err := client.Ping(context.Background()).Result()
@@ -62,11 +61,6 @@ func initRedis() {
 		options.Addr = host
 		options.Username = redisConf["username"]
 		options.Password = redisConf["password"]
-
-		idleTimeout := cast.ToInt64(redisConf["idleTimeout"])
-		if idleTimeout > 0 {
-			options.IdleTimeout = time.Second * time.Duration(idleTimeout)
-		}
 
 		poolSize := cast.ToInt(redisConf["poolSize"])
 		if poolSize > 0 {

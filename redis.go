@@ -1,8 +1,6 @@
 package redisdao
 
-import (
-	"github.com/go-redis/redis/v8"
-)
+import "github.com/redis/go-redis/v9"
 
 func NewRedisClient(instance string) *redis.Client {
 	Init()
