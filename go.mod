@@ -1,6 +1,6 @@
 module github.com/hy0kl/goredis
 
-go 1.20
+go 1.18
 
 require github.com/redis/go-redis/v9 v9.0.4
 
