@@ -1,8 +1,7 @@
-package redisdao
+package goredis
 
 import "github.com/redis/go-redis/v9"
 
-func NewRedisClient(instance string) *redis.Client {
-	Init()
+func Use(instance RedisInstance) *redis.Client {
 	return getInstance(instance)
 }

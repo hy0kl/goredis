@@ -1,11 +1,9 @@
-package redisdao
+package goredis
 
 import (
 	"context"
 	"testing"
 	"time"
-
-	"github.com/hy0kl/gconfig"
 )
 
 var (
@@ -14,12 +12,23 @@ var (
 )
 
 func TestNewSimpleRedis(t *testing.T) {
-	// load local conf.ini
-	gconfig.SetConfigFile("./conf/conf.ini")
-
 	ctx := context.Background()
-	client := NewRedisClient("RedisCache")
 
+	setup := []RedisConfig{
+		{
+			RedisIns: RedisInsCache,
+			Addr:     `127.0.0.1:6379`,
+		},
+		{
+			RedisIns: RedisInsStorage,
+			Addr:     `127.0.0.1:6379`,
+			DB:       1,
+		},
+	}
+
+	Initialize(setup...)
+
+	client := Use(RedisInsCache)
 	err := client.Set(ctx, testRdsKey, testRdsValue, 30*time.Second).Err()
 	if err != nil {
 		t.Error("fail")
@@ -27,14 +36,14 @@ func TestNewSimpleRedis(t *testing.T) {
 		t.Log("pass")
 	}
 
-	v := client.Get(context.Background(), testRdsKey).Val()
+	v := client.Get(ctx, testRdsKey).Val()
 	if v == testRdsValue {
 		t.Log("pass")
 	} else {
 		t.Error("fail")
 	}
 
-	delayClient := NewRedisClient("RedisStorage")
+	delayClient := Use(RedisInsStorage)
 	err = delayClient.Set(ctx, testRdsKey, testRdsValue, 30*time.Second).Err()
 	if err != nil {
 		t.Error("fail")
@@ -42,7 +51,7 @@ func TestNewSimpleRedis(t *testing.T) {
 		t.Log("pass")
 	}
 
-	v = client.Get(context.Background(), testRdsKey).Val()
+	v = client.Get(ctx, testRdsKey).Val()
 	if v == testRdsValue {
 		t.Log("pass")
 	} else {

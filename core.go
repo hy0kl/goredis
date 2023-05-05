@@ -1,4 +1,4 @@
-package redisdao
+package goredis
 
 import (
 	"context"
@@ -7,9 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hy0kl/gconfig"
 	"github.com/redis/go-redis/v9"
-	"github.com/spf13/cast"
 )
 
 func newRedisClient(option redis.Options) *redis.Client {
@@ -29,59 +27,52 @@ func newRedisClient(option redis.Options) *redis.Client {
 	return client
 }
 
-var initOnce sync.Once
-
 var instance = struct {
 	sync.RWMutex
-	redisInstances map[string]*redis.Client
-}{redisInstances: make(map[string]*redis.Client, 0)}
-
-func Init() {
-	initOnce.Do(func() {
-		initRedis()
-	})
+	redisInstances map[RedisInstance]*redis.Client
+}{
+	redisInstances: make(map[RedisInstance]*redis.Client, 0),
 }
 
-func initRedis() {
-	instance.redisInstances = make(map[string]*redis.Client, 0)
+// Initialize 此方法必须在 main 函数中显示调用
+func Initialize(setup ...RedisConfig) {
+	instance.redisInstances = make(map[RedisInstance]*redis.Client, 0)
 
-	var redisGroup = []string{`RedisCache`, `RedisStorage`}
-	for _, section := range redisGroup {
-		var redisConf = gconfig.GetConfStringMap(section)
+	for _, conf := range setup {
 		options := redis.Options{
 			PoolSize:    100,
 			ReadTimeout: 5 * time.Second,
 		}
 
-		host := redisConf["host"]
-		if host == "" {
-			panic(fmt.Sprintf(`lost required host, section: %s`, section))
+		if conf.Addr == "" {
+			panic(fmt.Sprintf(`lost required redis addr, conf: %#v`, conf))
 		}
 
-		options.Addr = host
-		options.Username = redisConf["username"]
-		options.Password = redisConf["password"]
+		options.Addr = conf.Addr
+		options.Username = conf.Username
+		options.Password = conf.Password
 
-		poolSize := cast.ToInt(redisConf["poolSize"])
-		if poolSize > 0 {
-			options.PoolSize = poolSize
+		if conf.PoolSize > 0 {
+			options.PoolSize = conf.PoolSize
 		}
 
-		db := cast.ToInt(redisConf["db"])
-		if db > 0 {
-			options.DB = db
+		if conf.DB > 0 {
+			options.DB = conf.DB
 		}
 
-		instance.redisInstances[section] = newRedisClient(options)
+		instance.redisInstances[conf.RedisIns] = newRedisClient(options)
 	}
 }
 
-func getInstance(server string) *redis.Client {
+func getInstance(server RedisInstance) *redis.Client {
 	instance.RLock()
 	ins, ok := instance.redisInstances[server]
 	instance.RUnlock()
+
 	if ok && ins != nil {
 		return ins
+	} else {
+		panic(fmt.Sprintf(`redis instance not found, server: %v`, server))
 	}
 
 	return nil
